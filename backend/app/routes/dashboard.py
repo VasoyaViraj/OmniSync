@@ -14,19 +14,28 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 
 @router.get("")
-async def get_dashboard():
+async def get_dashboard(page: int = 1):
     """
     Returns:
-      - upcoming_checkins: meetings where next_followup_date >= today
+      - upcoming_checkins: meetings where next_followup_date >= today (paginated)
+      - total_upcoming_checkins: count of all upcoming check-ins
       - latest_alerts:     10 most recent alerts
     """
     try:
         now = datetime.now(timezone.utc)
+        take = 6
+        skip = (page - 1) * take
+
+        total_upcoming_checkins = await db.meeting.count(
+            where={"next_followup_date": {"gte": now}}
+        )
 
         upcoming_checkins = await db.meeting.find_many(
             where={"next_followup_date": {"gte": now}},
             order={"next_followup_date": "asc"},
             include={"employee": True},
+            take=take,
+            skip=skip,
         )
 
         latest_alerts = await db.employeealert.find_many(
@@ -40,6 +49,7 @@ async def get_dashboard():
                 "upcoming_checkins": [
                     c.model_dump(mode="json") for c in upcoming_checkins
                 ],
+                "total_upcoming_checkins": total_upcoming_checkins,
                 "latest_alerts": [
                     a.model_dump(mode="json") for a in latest_alerts
                 ],

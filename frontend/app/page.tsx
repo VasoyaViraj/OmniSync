@@ -157,26 +157,37 @@ function PrepModal({ meeting, onClose }: { meeting: Meeting; onClose: () => void
 // ── Main Dashboard ─────────────────────────────────────────────
 export default function DashboardPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [totalMeetings, setTotalMeetings] = useState(0);
+  const [page, setPage] = useState(1);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [prepMeeting, setPrepMeeting] = useState<Meeting | null>(null);
 
   useEffect(() => {
-    Promise.all([getDashboard(), getEmployees()])
-      .then(([dash, emps]) => {
+    setLoading(true);
+    const fetchApi = async () => {
+      try {
+        const [dash, emps] = await Promise.all([getDashboard(page), getEmployees()]);
         setMeetings(dash.upcoming_checkins ?? []);
+        setTotalMeetings(dash.total_upcoming_checkins ?? 0);
         setAlerts(dash.latest_alerts ?? []);
         setEmployees(emps ?? []);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApi();
+  }, [page]);
+
+  const totalPages = Math.ceil(totalMeetings / 6);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Stats row */}
-      {loading ? (
+      {loading && page === 1 ? (
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-[80px]" />)}
         </div>
@@ -184,7 +195,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Total Employees", value: employees.length },
-            { label: "Upcoming Meetings", value: meetings.length },
+            { label: "Upcoming Meetings", value: totalMeetings },
             { label: "Active Alerts", value: alerts.length },
             { label: "Critical Alerts", value: alerts.filter((a) => a.severity === "critical").length },
           ].map((s) => (
@@ -199,9 +210,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Meetings */}
         <div className="xl:col-span-2 space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[oklch(0.52_0_0)]">
-            Upcoming Check-ins
-          </p>
+          <div className="flex justify-between items-center">
+             <p className="text-[11px] font-semibold uppercase tracking-widest text-[oklch(0.52_0_0)]">
+                Upcoming Check-ins
+             </p>
+          </div>
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2].map((i) => <Skeleton key={i} className="h-[140px]" />)}
@@ -211,10 +224,34 @@ export default function DashboardPage() {
               No upcoming meetings
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {meetings.map((m) => (
-                <UpcomingMeetingCard key={m.id} meeting={m} onPrepare={setPrepMeeting} />
-              ))}
+            <div className="space-y-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {meetings.map((m) => (
+                   <UpcomingMeetingCard key={m.id} meeting={m} onPrepare={setPrepMeeting} />
+                 ))}
+               </div>
+               {/* Pagination Controls */}
+               {totalPages > 1 && (
+                 <div className="flex items-center justify-between pt-4 border-t border-[oklch(0.90_0_0)]">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-4 py-2 text-[12px] font-medium border border-[oklch(0.88_0_0)] rounded-lg hover:bg-[oklch(0.97_0_0)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-[12px] text-[oklch(0.52_0_0)]">
+                       Page {page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="px-4 py-2 text-[12px] font-medium border border-[oklch(0.88_0_0)] rounded-lg hover:bg-[oklch(0.97_0_0)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                 </div>
+               )}
             </div>
           )}
         </div>
@@ -226,7 +263,7 @@ export default function DashboardPage() {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[oklch(0.52_0_0)] mb-3">
               Early Warnings
             </p>
-            {loading ? (
+            {loading && page === 1 ? (
               <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}</div>
             ) : alerts.length === 0 ? (
               <p className="text-[12px] text-[oklch(0.52_0_0)]">No active alerts.</p>
@@ -236,7 +273,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Heatmap */}
-          {!loading && employees.length > 0 && <SentimentHeatmap employees={employees} />}
+          {(!loading || page > 1) && employees.length > 0 && <SentimentHeatmap employees={employees} />}
         </div>
       </div>
 

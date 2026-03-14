@@ -28,9 +28,9 @@ export const updateEmployee = (id: string, data: Partial<Employee>) =>
   apiFetch(`/api/employees/${id}`, { method: "PUT", body: JSON.stringify(data) });
 
 // ── Dashboard ──────────────────────────────────────────────────
-export const getDashboard = () =>
-  apiFetch<{ upcoming_checkins: Meeting[]; latest_alerts: Alert[] }>(
-    "/api/dashboard"
+export const getDashboard = (page: number = 1) =>
+  apiFetch<{ upcoming_checkins: Meeting[]; total_upcoming_checkins: number; latest_alerts: Alert[] }>(
+    `/api/dashboard?page=${page}`
   );
 
 // ── Meetings ───────────────────────────────────────────────────
