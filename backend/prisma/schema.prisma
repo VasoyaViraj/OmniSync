@@ -1,10 +1,6 @@
-// ─────────────────────────────────────────────────────────────
-// HR Intelligence Dashboard — Prisma Schema
-// ─────────────────────────────────────────────────────────────
-
 generator client {
   provider             = "prisma-client-py"
-  recursive_type_depth = 5
+  recursive_type_depth = "5"
 }
 
 datasource db {
@@ -12,45 +8,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-///////////////////////////////////////////////////////////////
-// Employees
-///////////////////////////////////////////////////////////////
-
 model Employee {
-  id                String   @id @default(uuid())
-  name              String
-  email             String   @unique
-  department        String
-  designation       String
-  location          String
-  manager_id        String?
-  tenure_years      Float    @default(0)
-  performance_score Float    @default(0)
-  engagement_score  Float    @default(0)
-
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-
-  // Self relation (manager hierarchy)
-  manager   Employee?  @relation("ManagerRelation", fields: [manager_id], references: [id])
-  reports   Employee[] @relation("ManagerRelation")
-
-  // Relations
-  meetings             Meeting[]
+  id                   String                @id @default(uuid())
+  name                 String
+  email                String                @unique
+  department           String
+  designation          String
+  location             String
+  manager_id           String?
+  tenure_years         Float                 @default(0)
+  performance_score    Float                 @default(0)
+  engagement_score     Float                 @default(0)
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
   alerts               EmployeeAlert[]
   notes                EmployeeNote[]
+  manager              Employee?             @relation("ManagerRelation", fields: [manager_id], references: [id])
+  reports              Employee[]            @relation("ManagerRelation")
   institutional_memory InstitutionalMemory[]
+  meetings             Meeting[]
 
   @@index([manager_id])
   @@map("employees")
 }
 
-///////////////////////////////////////////////////////////////
-// Meetings
-///////////////////////////////////////////////////////////////
-
 model Meeting {
-  id                 String   @id @default(uuid())
+  id                 String           @id @default(uuid())
   employee_id        String
   hr_id              String
   meeting_date       DateTime
@@ -59,21 +42,14 @@ model Meeting {
   summary            String?
   sentiment          String?
   next_followup_date DateTime?
-
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
-
-  // Relations
-  employee Employee        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  insights MeetingInsight[]
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+  insights           MeetingInsight[]
+  employee           Employee         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@index([employee_id])
   @@map("meetings")
 }
-
-///////////////////////////////////////////////////////////////
-// Meeting Insights
-///////////////////////////////////////////////////////////////
 
 model MeetingInsight {
   id              String   @id @default(uuid())
@@ -82,20 +58,13 @@ model MeetingInsight {
   action_items    String?
   risk_flags      String?
   sentiment_score Float    @default(0)
-
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
-
-  // Relations
-  meeting Meeting @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
+  meeting         Meeting  @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
 
   @@index([meeting_id])
   @@map("meeting_insights")
 }
-
-///////////////////////////////////////////////////////////////
-// Employee Alerts
-///////////////////////////////////////////////////////////////
 
 model EmployeeAlert {
   id          String   @id @default(uuid())
@@ -103,40 +72,26 @@ model EmployeeAlert {
   alert_type  String
   description String
   severity    String
-
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  // Relations
-  employee Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@index([employee_id])
   @@map("employee_alerts")
 }
-
-///////////////////////////////////////////////////////////////
-// Employee Notes
-///////////////////////////////////////////////////////////////
 
 model EmployeeNote {
   id          String   @id @default(uuid())
   employee_id String
   note        String
   created_by  String
-
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  // Relations
-  employee Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@index([employee_id])
   @@map("employee_notes")
 }
-
-///////////////////////////////////////////////////////////////
-// Institutional Memory
-///////////////////////////////////////////////////////////////
 
 model InstitutionalMemory {
   id          String   @id @default(uuid())
@@ -145,13 +100,24 @@ model InstitutionalMemory {
   title       String
   description String?
   source      String?
-
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  // Relations
-  employee Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@index([employee_id])
   @@map("institutional_memory")
+}
+
+model meeting_intelligence {
+  id                   String   @id
+  title                String
+  date                 DateTime
+  participants         Json
+  transcript           String
+  summary              Json?
+  actionItems          Json?
+  speakerContributions Json?
+  employeeInsights     Json?
+  created_at           DateTime @default(now())
+  updated_at           DateTime
 }

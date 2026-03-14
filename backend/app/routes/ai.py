@@ -1,11 +1,11 @@
 """
-AI stub routes — replicate the dummy Next.js API routes.
+AI routes — backed by Google Gemini (gemini-1.5-flash).
 
-POST /api/ai/transcribe         → dummy transcript
-POST /api/ai/analyze-meeting    → dummy summary + insights + sentiment
-POST /api/ai/generate-alert     → dummy alertType
+POST /api/ai/transcribe         → dummy transcript (Whisper stub)
+POST /api/ai/analyze-meeting    → LIVE Gemini: summary + insights + sentiment
+POST /api/ai/generate-alert     → rule-based alertType
 POST /api/ai/meeting-prep       → dummy prep_notes
-POST /api/ai/chat               → dummy answer
+POST /api/ai/chat               → dummy RAG answer
 """
 
 import asyncio
@@ -13,10 +13,12 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
+from app.services.gemini import generate_insights
+
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
 
-# ── Request models ────────────────────────────────────────────
+# ── Request models ────────────────────────────────────────────────
 
 
 class TranscribeRequest(BaseModel):
@@ -42,7 +44,7 @@ class ChatRequest(BaseModel):
     question: str
 
 
-# ── Routes ────────────────────────────────────────────────────
+# ── Routes ────────────────────────────────────────────────────────
 
 
 @router.post("/transcribe")
@@ -63,40 +65,36 @@ async def transcribe():
 
 @router.post("/analyze-meeting")
 async def analyze_meeting(payload: AnalyzeMeetingRequest):
-    """Simulate AI extraction of summary, insights, and sentiment."""
-    await asyncio.sleep(2.5)
+    """
+    Analyze a meeting transcript with Gemini and return structured HR insights.
 
-    text = payload.transcript.lower()
-    if any(w in text for w in ["overwhelmed", "intense", "burnout", "stress"]):
-        sentiment = "Negative"
-    elif any(w in text for w in ["excited", "great", "thrilled", "positive"]):
-        sentiment = "Positive"
-    else:
-        sentiment = "Neutral"
+    Returns a flat JSON object with:
+      summary, key_takeaways, action_items, risk_flags, sentiment_score, sentiment
+    """
+    insights = await generate_insights(payload.transcript)
 
+    # Return the flat Gemini response; frontend reads these fields directly.
     return {
-        "summary": (
-            "The employee discussed their current project workload, indicating some stress regarding "
-            "recent deadlines. They also expressed clear interest in career advancement, specifically "
-            "mentioning a desire to move into a Team Lead position within the next year."
-        ),
+        "summary": insights["summary"],
         "insights": {
-            "key_takeaways": "Experiencing high workload and stress related to Q3 deliverables; Strong desire for career growth",
-            "action_items": "Schedule follow-up on resource allocation; Discuss leadership development path",
-            "risk_flags": "Risk of burnout if resources are not adjusted",
-            "sentiment_score": -0.5 if sentiment == "Negative" else 0.8 if sentiment == "Positive" else 0.0
+            "key_takeaways": insights["key_takeaways"],
+            "action_items": insights["action_items"],
+            "risk_flags": insights["risk_flags"],
+            "sentiment_score": insights["sentiment_score"],
         },
-        "sentiment": sentiment,
+        "sentiment": insights["sentiment"],
     }
 
 
 @router.post("/generate-alert")
 async def generate_alert(payload: GenerateAlertRequest):
-    """Simulate AI-generated early warning signal."""
+    """Rule-based early warning signal derived from the analyzed summary."""
     await asyncio.sleep(1.5)
 
     summary_lower = payload.summary.lower()
-    if payload.sentiment == "Negative":
+    sentiment_lower = payload.sentiment.lower()
+
+    if sentiment_lower in ("negative", "concern"):
         alert_type = "High Risk: Burnout / Workload pressure mentioned"
     elif any(w in summary_lower for w in ["promotion", "lead", "leadership", "growth"]):
         alert_type = "Flight Risk: Seeking career growth opportunities"
