@@ -4,12 +4,26 @@ import { usePathname } from "next/navigation";
 
 const titles: Record<string, string> = {
   "/": "Overview",
-  "/employees": "Employees",
+  "/dashboard": "Dashboard",
+  "/dashboard/overview": "Dashboard Overview",
+  "/dashboard/employees": "Employees",
+  "/dashboard/meetings": "Meetings",
+  "/dashboard/insights": "Insights",
+  "/dashboard/alerts": "Alerts",
+  "/dashboard/notes": "Notes",
+  "/dashboard/analytics": "Analytics",
   "/meetings/create": "New Meeting",
 };
 
 function getTitle(pathname: string) {
   if (pathname === "/") return "Overview";
+  if (pathname === "/dashboard") return "Dashboard";
+  if (pathname.startsWith("/dashboard/employees")) return "Employees";
+  if (pathname.startsWith("/dashboard/meetings")) return "Meetings";
+  if (pathname.startsWith("/dashboard/insights")) return "Insights";
+  if (pathname.startsWith("/dashboard/alerts")) return "Alerts";
+  if (pathname.startsWith("/dashboard/notes")) return "Notes";
+  if (pathname.startsWith("/dashboard/analytics")) return "Analytics";
   if (pathname.startsWith("/employees/") && pathname.split("/").length === 3) return "Employee";
   if (pathname.startsWith("/employees")) return "Employees";
   if (pathname.startsWith("/meetings/create")) return "New Meeting";

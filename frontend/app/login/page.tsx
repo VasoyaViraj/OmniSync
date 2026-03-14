@@ -17,8 +17,8 @@ export default function LoginPage() {
       (a) => a.email === email && a.password === password
     );
     if (account) {
-      setSession();
-      router.push("/");
+      setSession(account.role);
+      router.push("/dashboard");
     } else {
       setError("Invalid credentials");
     }
@@ -88,9 +88,12 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-5 border-t border-[oklch(0.92_0_0)]">
-            <p className="text-[11px] text-[oklch(0.62_0_0)] text-center">
-              Demo · hr1@omnisync.com / password123
-            </p>
+            <div className="space-y-1 text-[11px] text-[oklch(0.62_0_0)]">
+              <p className="text-center font-medium">Demo accounts</p>
+              <p>Junior HR: junior.hr@omnisync.com / password123</p>
+              <p>Senior HR: senior.hr@omnisync.com / password123</p>
+              <p>Admin HR: admin.hr@omnisync.com / password123</p>
+            </div>
           </div>
         </div>
       </div>

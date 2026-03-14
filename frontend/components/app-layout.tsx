@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Navbar } from "./navbar";
-import { getSession } from "../lib/auth";
+import { getSession, getRole, type UserRole } from "../lib/auth";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,11 +15,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = () => {
       const session = getSession();
+      const role = getRole();
+
       if (!session && pathname !== "/login") {
         router.push("/login");
-      } else {
-        setIsAuthenticated(session);
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
       }
+
+      // Basic route-level role guard: Junior HR cannot access analytics/insights views.
+      if (session && role === "junior") {
+        const blocked =
+          pathname.startsWith("/dashboard/analytics") ||
+          pathname.startsWith("/dashboard/insights");
+        if (blocked) {
+          router.push("/dashboard");
+        }
+      }
+
+      setIsAuthenticated(session);
       setIsLoading(false);
     };
 
