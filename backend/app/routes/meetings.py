@@ -58,7 +58,7 @@ async def create_meeting(payload: MeetingCreate):
         if not employee:
             return error_response("Employee not found", 404)
 
-        meeting = await db.meeting.create(data=payload.model_dump(mode="json"))
+        meeting = await db.meeting.create(data=payload.model_dump())
 
         # ── Business Logic: auto-create institutional memory event ──
         await db.institutionalmemory.create(
@@ -87,7 +87,7 @@ async def update_meeting(meeting_id: str, payload: MeetingUpdate):
 
         updated = await db.meeting.update(
             where={"id": meeting_id},
-            data=payload.model_dump(exclude_unset=True, mode="json"),
+            data=payload.model_dump(exclude_unset=True),
         )
         return success_response(updated.model_dump(mode="json"))
     except Exception as exc:

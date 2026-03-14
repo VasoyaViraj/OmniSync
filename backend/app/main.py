@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import db
-from app.routes import employees, meetings, insights, alerts, notes, memory, dashboard
+from app.routes import employees, meetings, insights, alerts, notes, memory, dashboard, ai
 
 
 # ── Lifespan: Prisma connect / disconnect ─────────────────────
@@ -49,6 +49,7 @@ app.include_router(alerts.router)
 app.include_router(notes.router)
 app.include_router(memory.router)
 app.include_router(dashboard.router)
+app.include_router(ai.router)
 
 
 # ── Health check ──────────────────────────────────────────────
